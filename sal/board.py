@@ -1,4 +1,21 @@
 "Board class"
+from collections import namedtuple
+
+Color = namedtuple("Color", "name hex")
+
+COLORS = [
+    Color("red", "#FF0000"),
+    Color("green", "#52FF00"),
+    Color("blue", "#0043FF"),
+    Color("yellow", "#F2FF00"),
+    Color("pink", "#FF69B4"),
+    Color("purple", "#800080"),
+]
+
+
+class PlayerExistsError(ValueError):
+    "Raised if a player with pid already exists"
+
 
 class Board():
     """
@@ -27,10 +44,28 @@ class Board():
             |  1| 2| 3| 4| 5| 5| 7| 8| 9|10|
     """
     def __init__(self, board, image=None):
-        pass
+        self.board = dict(board)
+        if image is None:
+            self.image = None
+        elif isinstance(image, str):
+            with open(image, "rb") as img:
+                self.image = img.read()
+        else:
+            self.image = image
+        self.players = []
 
     def add_player(self, pid, name):
         "Adds a player with the id and returns a colorname, colorid tuple"
+        color = COLORS[len(self.players) % len(COLORS)]
+        if pid in (player["pid"] for player in self.players):
+            raise PlayerExistsError
+        self.players.append({
+            "pid": pid,
+            "name": name,
+            "color": color,
+            "position": 0,
+        })
+        return color
 
     def move(self, pid, steps, *, check_turn=False):
         """
