@@ -32,8 +32,22 @@ def newgame(update, context):
 
     board = random.choice(BOARDS)
     game = context.chat_data["game"] = Board(board.data, board.image)
-    caption = f"Starting new game with board {board.name}"
-    context.bot.send_photo(update.effective_chat.id, BytesIO(game.draw()), caption=caption)
+    caption = f"Starting new game with board {board.name}. Join via /join."
+    context.bot.send_photo(update.effective_chat.id, BytesIO(game.draw()),
+                           caption=caption)
+
+
+def join(update, context):
+    "/join"
+    if "game" not in context.chat_data:
+        context.bot.send_message(update.effective_chat.id,
+                                 "No game in progress.")
+        return
+
+    game = context.chat_data["game"]
+    first_name = update.effective_user.first_name
+    game.add_player(update.effective_user.id, first_name)
+    context.bot.send_message(update.effective_chat.id, f"{first_name} joined!")
 
 
 def main():
@@ -43,8 +57,10 @@ def main():
     dispatcher = updater.dispatcher
     start_handler = CommandHandler("start", start)
     newgame_handler = CommandHandler("newgame", newgame)
+    join_handler = CommandHandler("join", join)
     dispatcher.add_handler(start_handler)
     dispatcher.add_handler(newgame_handler)
+    dispatcher.add_handler(join_handler)
     updater.start_polling()
 
 if __name__ == "__main__":
