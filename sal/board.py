@@ -111,6 +111,7 @@ class Board():
 
     def draw(self):
         "Returns the image with all players drawn on it"
+        return self.image
 
     @property
     def turn(self):
