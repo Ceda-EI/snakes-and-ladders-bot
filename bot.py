@@ -50,6 +50,19 @@ def join(update, context):
     context.bot.send_message(update.effective_chat.id, f"{first_name} joined!")
 
 
+def begin(update, context):
+    if "game" not in context.chat_data:
+        context.bot.send_message(update.effective_chat.id,
+                                 "No game in progress.")
+        return
+
+    game = context.chat_data["game"]
+    context.chat_data["begin"] = True
+    player_name = game.turn["name"]
+    message = f"Game has begun! Current turn: {player_name}"
+    context.bot.send_message(update.effective_chat.id, message)
+
+
 def main():
     "Main function"
     logging.basicConfig(level=logging.INFO)
@@ -58,9 +71,11 @@ def main():
     start_handler = CommandHandler("start", start)
     newgame_handler = CommandHandler("newgame", newgame)
     join_handler = CommandHandler("join", join)
+    begin_handler = CommandHandler("begin", begin)
     dispatcher.add_handler(start_handler)
     dispatcher.add_handler(newgame_handler)
     dispatcher.add_handler(join_handler)
+    dispatcher.add_handler(begin_handler)
     updater.start_polling()
 
 if __name__ == "__main__":
