@@ -65,6 +65,25 @@ def begin(update, context):
     context.bot.send_message(update.effective_chat.id, message)
 
 
+def status(update, context):
+    "/status"
+    if "game" not in context.chat_data:
+        context.bot.send_message(update.effective_chat.id,
+                                 "No game in progress.")
+        return
+
+    game = context.chat_data["game"]
+    message = "List of players: \n\n"
+    for player in game.players:
+        if game.turn == player:
+            message += "* "
+        else:
+            message += "   "
+        message += (f"{player['position']}: {player['name']} "
+                    f"({player['color'].name} {player['shape'].name})\n")
+    context.bot.send_message(update.effective_chat.id, message)
+
+
 def dice(update, context):
     "Handles dice being thrown"
     if "game" not in context.chat_data:
@@ -123,11 +142,13 @@ def main():
     newgame_handler = CommandHandler("newgame", newgame)
     join_handler = CommandHandler("join", join)
     begin_handler = CommandHandler("begin", begin)
+    status_handler = CommandHandler("status", status)
     dice_handler = MessageHandler(filters.Filters.dice, dice)
     dispatcher.add_handler(start_handler)
     dispatcher.add_handler(newgame_handler)
     dispatcher.add_handler(join_handler)
     dispatcher.add_handler(begin_handler)
+    dispatcher.add_handler(status_handler)
     dispatcher.add_handler(dice_handler)
     updater.start_polling()
 
