@@ -102,8 +102,8 @@ class Board():
             new_position = self.board[new_position]
 
         player["position"] = new_position
-        if not steps == 6 and not self.new_turn_on_six:
-            turn_idx = (turn_idx + 1) % len(self.players)
+        if not (steps == 6 and self.new_turn_on_six):
+            self.turn_idx = (self.turn_idx + 1) % len(self.players)
         return (new_position, movement)
 
     def remove_player(self, pid):
