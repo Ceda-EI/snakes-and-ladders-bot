@@ -1,5 +1,7 @@
 "Board class"
 from collections import namedtuple
+from io import BytesIO
+from PIL import Image, ImageDraw
 
 Color = namedtuple("Color", "name hex")
 
@@ -11,6 +13,19 @@ COLORS = [
     Color("pink", "#FF69B4"),
     Color("purple", "#800080"),
 ]
+
+def get_coordinates(num, width=80, xoffset=0, height=80, yoffset=0):
+    "Returns a tuple of form ((x_start, y_start), (x_end, y_end))"
+    num -= 1
+    row = num // 10
+    y_start = 80 * (10 - row - 1) + yoffset
+    y_end = y_start + height
+    col = num % 10
+    if row % 2 == 1:
+        col = 9 - col
+    x_start = 80 * col + xoffset
+    x_end = x_start + width
+    return ((x_start, y_start), (x_end, y_end))
 
 
 class PlayerExistsError(ValueError):
@@ -111,7 +126,29 @@ class Board():
 
     def draw(self):
         "Returns the image with all players drawn on it"
-        return self.image
+        coords = {}
+        for player in self.players:
+            position = player["position"]
+            if not 0 < position <= 100:
+                continue
+            if position not in coords:
+                coords[position] = [player["color"].hex]
+            else:
+                coords[position].append(player["color"].hex)
+        img = Image.open(BytesIO(self.image)).convert("RGB")
+        draw = ImageDraw.Draw(img)
+        for coord in coords:
+            width = int(80 / (len(coords[coord])))
+            offset = 0
+            for color in coords[coord]:
+                rect = get_coordinates(coord, width, offset)
+                draw.rectangle(rect, fill=color)
+                offset += width
+
+        fin = BytesIO()
+        img.save(fin, "jpeg")
+        fin.seek(0)
+        return fin
 
     @property
     def turn(self):

@@ -1,5 +1,4 @@
 "Bot Handler"
-from io import BytesIO
 import logging
 import random
 
@@ -33,7 +32,7 @@ def newgame(update, context):
     board = random.choice(BOARDS)
     game = context.chat_data["game"] = Board(board.data, board.image)
     caption = f"Starting new game with board {board.name}. Join via /join."
-    context.bot.send_photo(update.effective_chat.id, BytesIO(game.draw()),
+    context.bot.send_photo(update.effective_chat.id, game.draw(),
                            caption=caption)
 
 
