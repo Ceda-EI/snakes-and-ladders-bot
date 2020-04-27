@@ -154,10 +154,13 @@ class Board():
             for row in grid:
                 xoffset = 0
                 for color in row:
+                    if color is None:
+                        continue
                     ellipse = get_coordinates(coord, width, xoffset, width,
                                               yoffset)
                     draw.ellipse(ellipse, color, "#000000", 3)
                     xoffset += width
+                yoffset += width
 
 
         fin = BytesIO()
