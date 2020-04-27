@@ -5,14 +5,29 @@ from io import BytesIO
 from PIL import Image, ImageDraw
 
 Color = namedtuple("Color", "name hex")
+Shape = namedtuple("Shape", "name function")
 
 COLORS = [
-    Color("red", "#FF0000"),
-    Color("green", "#52FF00"),
-    Color("blue", "#0043FF"),
-    Color("yellow", "#F2FF00"),
-    Color("pink", "#FF69B4"),
-    Color("purple", "#800080"),
+    Color("blue", "#002159"),
+    Color("green", "#005939"),
+    Color("purple", "#590057"),
+    Color("olive", "#3e5900"),
+    Color("yellow", "#595900"),
+]
+
+def draw_circle(draw, *args, **kwargs):
+    "Draws a circle"
+    draw.ellipse(*args, **kwargs)
+
+
+def draw_square(draw, *args, **kwargs):
+    "Draws a square"
+    draw.rectangle(*args, **kwargs)
+
+
+SHAPES = [
+    Shape("circle", draw_circle),
+    Shape("square", draw_square),
 ]
 
 def get_coordinates(num, width=80, xoffset=0, height=80, yoffset=0):
@@ -91,15 +106,17 @@ class Board():
     def add_player(self, pid, name):
         "Adds a player with the id and returns a colorname, colorid tuple"
         color = COLORS[len(self.players) % len(COLORS)]
+        shape = SHAPES[(len(self.players) // len(COLORS)) % len(SHAPES)]
         if pid in (player["pid"] for player in self.players):
             raise PlayerExistsError
         self.players.append({
             "pid": pid,
             "name": name,
             "color": color,
+            "shape": shape,
             "position": 0,
         })
-        return color
+        return f"{color.name} {shape.name}"
 
     def move(self, pid, steps, *, check_turn=False):
         """
@@ -142,23 +159,23 @@ class Board():
             if not 0 < position <= 100:
                 continue
             if position not in coords:
-                coords[position] = [player["color"].hex]
+                coords[position] = [(player["color"].hex, player["shape"].function)]
             else:
-                coords[position].append(player["color"].hex)
+                coords[position].append((player["color"].hex, player["shape"].function))
         img = Image.open(BytesIO(self.image)).convert("RGB")
         draw = ImageDraw.Draw(img)
         for coord in coords:
             grid = arrange_in_square(coords[coord])
-            width = int(80 / (len(grid)))
-            yoffset = 0
+            width = int(50 / (len(grid)))
+            yoffset = 15
             for row in grid:
-                xoffset = 0
-                for color in row:
-                    if color is None:
+                xoffset = 15
+                for item in row:
+                    if item is None:
                         continue
-                    ellipse = get_coordinates(coord, width, xoffset, width,
-                                              yoffset)
-                    draw.ellipse(ellipse, color, "#000000", 3)
+                    color, shape = item
+                    box = get_coordinates(coord, width, xoffset, width, yoffset)
+                    shape(draw, box, None, color, 5)
                     xoffset += width
                 yoffset += width
 
