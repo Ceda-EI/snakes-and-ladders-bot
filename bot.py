@@ -2,7 +2,8 @@
 import logging
 import random
 
-from telegram.ext import Updater, CommandHandler, MessageHandler, filters
+from telegram.ext import Updater, CommandHandler, MessageHandler, filters, \
+        PicklePersistence
 import config
 
 from boards import BOARDS
@@ -112,7 +113,11 @@ def dice(update, context):
 def main():
     "Main function"
     logging.basicConfig(level=logging.INFO)
-    updater = Updater(token=config.API_KEY, use_context=True)
+    if config.PERSIST:
+        persist = PicklePersistence(config.PERSIST_FILENAME)
+    else:
+        persist = None
+    updater = Updater(token=config.API_KEY, use_context=True, persistence=persist)
     dispatcher = updater.dispatcher
     start_handler = CommandHandler("start", start)
     newgame_handler = CommandHandler("newgame", newgame)
