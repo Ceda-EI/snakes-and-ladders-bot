@@ -1,5 +1,6 @@
 "Board class"
 from collections import namedtuple
+from math import ceil
 from io import BytesIO
 from PIL import Image, ImageDraw
 
@@ -26,6 +27,15 @@ def get_coordinates(num, width=80, xoffset=0, height=80, yoffset=0):
     x_start = 80 * col + xoffset
     x_end = x_start + width
     return ((x_start, y_start), (x_end, y_end))
+
+
+def arrange_in_square(parts):
+    "Arranges an array into the smallest NxN it can be arranged into"
+    width = ceil(len(parts)**(1/2))
+    array = [[None] * width for i in range(width)]
+    for idx, part in enumerate(parts):
+        array[idx // width][idx % width] = part
+    return array
 
 
 class PlayerExistsError(ValueError):
@@ -138,12 +148,17 @@ class Board():
         img = Image.open(BytesIO(self.image)).convert("RGB")
         draw = ImageDraw.Draw(img)
         for coord in coords:
-            width = int(80 / (len(coords[coord])))
-            offset = 0
-            for color in coords[coord]:
-                rect = get_coordinates(coord, width, offset)
-                draw.rectangle(rect, fill=color)
-                offset += width
+            grid = arrange_in_square(coords[coord])
+            width = int(80 / (len(grid)))
+            yoffset = 0
+            for row in grid:
+                xoffset = 0
+                for color in row:
+                    ellipse = get_coordinates(coord, width, xoffset, width,
+                                              yoffset)
+                    draw.ellipse(ellipse, color, "#000000", 3)
+                    xoffset += width
+
 
         fin = BytesIO()
         img.save(fin, "jpeg")
