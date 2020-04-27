@@ -67,8 +67,9 @@ def begin(update, context):
 def dice(update, context):
     "Handles dice being thrown"
     if "game" not in context.chat_data:
-        context.bot.send_message(update.effective_chat.id,
-                                 "No game in progress.")
+        return
+
+    if update.message.forward_date is not None:
         return
 
     if not context.chat_data.get("begin", False):
