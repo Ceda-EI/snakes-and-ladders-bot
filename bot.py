@@ -1,6 +1,7 @@
 "Bot Handler"
 import logging
 import random
+import time
 
 from telegram.ext import Updater, CommandHandler, MessageHandler, filters, \
         PicklePersistence
@@ -154,6 +155,8 @@ def dice(update, context):
         return
 
     steps = update.message.dice.value
+    # Wait for dice to roll on client side
+    time.sleep(3.9)
     try:
         player = game.turn
         final_position, direction = game.move(pid, steps, check_turn=True)
