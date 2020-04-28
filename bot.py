@@ -30,9 +30,18 @@ def newgame(update, context):
         context.bot.send_message(update.effective_chat.id, "Game in progress!")
         return
 
+    if "new_turn_on_six" not in context.chat_data:
+        context.chat_data["new_turn_on_six"] = False
+
     board = random.choice(BOARDS)
-    game = context.chat_data["game"] = Board(board.data, board.image)
-    caption = f"Starting new game with board {board.name}. Join via /join."
+    game = context.chat_data["game"] = Board(
+        board.data,
+        board.image,
+        new_turn_on_six=context.chat_data["new_turn_on_six"]
+    )
+    context.chat_data["admin"] = update.effective_user.id
+    caption = (f"Starting new game with board {board.name}. Join via /join. "
+               "Configure via /settings.")
     context.bot.send_photo(update.effective_chat.id, game.draw(),
                            caption=caption)
 
@@ -84,6 +93,30 @@ def status(update, context):
     context.bot.send_message(update.effective_chat.id, message)
 
 
+def settings(update, context):
+    "/settings"
+    message = f"""
+Another turn if the player rolls 6
+
+Status: {"Enabled" if context.chat_data.get("new_turn_on_six", False) else "Disabled"}
+Enable: /enable_6
+Disable: /disable_6
+    """
+    context.bot.send_message(update.effective_chat.id, message)
+
+
+def toggle_6(update, context, state):
+    "/enable_6 and /disable_6"
+    if update.effective_user.id != context.chat_data.get("admin", 0):
+        message = "Only the game creator can configure the settings."
+    else:
+        message = "Enabled!" if state else "Disabled!"
+        context.chat_data["new_turn_on_six"] = state
+        if "game" in context.chat_data:
+            context.chat_data["game"].new_turn_on_six = state
+    context.bot.send_message(update.effective_chat.id, message)
+
+
 def dice(update, context):
     "Handles dice being thrown"
     if "game" not in context.chat_data:
@@ -114,6 +147,7 @@ def dice(update, context):
         message = f"{player['name']} ({player['color'].name}) won! Game ended."
         del context.chat_data["game"]
         context.chat_data["begin"] = False
+        del context.chat_data["admin"]
     elif direction == 1:
         message = (f"{player['name']} grabbed a ladder and reached "
                    f"{final_position}.")
@@ -143,13 +177,19 @@ def main():
     join_handler = CommandHandler("join", join)
     begin_handler = CommandHandler("begin", begin)
     status_handler = CommandHandler("status", status)
+    settings_handler = CommandHandler("settings", settings)
+    enable_6_handler = CommandHandler("enable_6", lambda x, y: toggle_6(x, y, True))
+    disable_6_handler = CommandHandler("disable_6", lambda x, y: toggle_6(x, y, False))
     dice_handler = MessageHandler(filters.Filters.dice, dice)
     dispatcher.add_handler(start_handler)
     dispatcher.add_handler(newgame_handler)
     dispatcher.add_handler(join_handler)
     dispatcher.add_handler(begin_handler)
     dispatcher.add_handler(status_handler)
+    dispatcher.add_handler(settings_handler)
     dispatcher.add_handler(dice_handler)
+    dispatcher.add_handler(enable_6_handler)
+    dispatcher.add_handler(disable_6_handler)
     updater.start_polling()
 
 if __name__ == "__main__":
