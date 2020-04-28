@@ -117,6 +117,23 @@ def toggle_6(update, context, state):
     context.bot.send_message(update.effective_chat.id, message)
 
 
+def kill(update, context):
+    "/kill"
+    if "game" not in context.chat_data:
+        context.bot.send_message(update.effective_chat.id,
+                                 "No game in progress.")
+        return
+    if update.effective_user.id != context.chat_data["admin"]:
+        context.bot.send_message(update.effective_chat.id,
+                                 "Only game creator can kill the game.")
+        return
+
+    del context.chat_data["game"]
+    del context.chat_data["admin"]
+    context.chat_data["begin"] = False
+    context.bot.send_message(update.effective_chat.id, "Killed!")
+
+
 def dice(update, context):
     "Handles dice being thrown"
     if "game" not in context.chat_data:
@@ -180,6 +197,7 @@ def main():
     settings_handler = CommandHandler("settings", settings)
     enable_6_handler = CommandHandler("enable_6", lambda x, y: toggle_6(x, y, True))
     disable_6_handler = CommandHandler("disable_6", lambda x, y: toggle_6(x, y, False))
+    kill_handler = CommandHandler("kill", kill)
     dice_handler = MessageHandler(filters.Filters.dice, dice)
     dispatcher.add_handler(start_handler)
     dispatcher.add_handler(newgame_handler)
@@ -187,6 +205,7 @@ def main():
     dispatcher.add_handler(begin_handler)
     dispatcher.add_handler(status_handler)
     dispatcher.add_handler(settings_handler)
+    dispatcher.add_handler(kill_handler)
     dispatcher.add_handler(dice_handler)
     dispatcher.add_handler(enable_6_handler)
     dispatcher.add_handler(disable_6_handler)
