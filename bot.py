@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 "Bot Handler"
 import logging
 import random
@@ -102,19 +103,36 @@ Another turn if the player rolls 6
 Status: {"Enabled" if context.chat_data.get("new_turn_on_six", False) else "Disabled"}
 Enable: /enable_6
 Disable: /disable_6
+
+
+Delete previous boards when new board is sent
+
+Status: {"Enabled" if context.chat_data.get("delete_boards", True) else "Disabled"}
+Enable: /enable_delete
+Disable: /disable_delete
     """
     context.bot.send_message(update.effective_chat.id, message)
 
 
-def toggle_6(update, context, state):
-    "/enable_6 and /disable_6"
+def update_setting(update, context, setting, state, attribute=None):
+    """
+    /enable_* and /disable_*
+    Parameters:
+        update: telegram.Update
+        context: telegram.ext.CallbackContext
+        setting: str, Key to be modified
+        state: any, Value to be set
+        attribute: None | str, attribute to be updated on Board class
+    """
     if update.effective_user.id != context.chat_data.get("admin", 0):
         message = "Only the game creator can configure the settings."
     else:
         message = "Enabled!" if state else "Disabled!"
-        context.chat_data["new_turn_on_six"] = state
-        if "game" in context.chat_data:
-            context.chat_data["game"].new_turn_on_six = state
+        context.chat_data[setting] = state
+        if attribute is not None:
+            if "game" in context.chat_data:
+                game = context.chat_data["game"]
+                setattr(game, attribute, state)
     context.bot.send_message(update.effective_chat.id, message)
 
 
@@ -180,7 +198,12 @@ def dice(update, context):
     if final_position != 100:
         next_player = game.turn
         message += f" Current turn: {next_player['name']}"
-    context.bot.send_photo(update.effective_chat.id, img, caption=message)
+    upd = context.bot.send_photo(update.effective_chat.id, img, caption=message)
+    if context.chat_data.get("delete_boards", True):
+        if "last_message" in context.chat_data:
+            context.bot.delete_message(update.effective_chat.id,
+                                       context.chat_data["last_message"])
+    context.chat_data["last_message"] = upd.message_id
 
 
 def main():
@@ -198,8 +221,24 @@ def main():
     begin_handler = CommandHandler("begin", begin)
     status_handler = CommandHandler("status", status)
     settings_handler = CommandHandler("settings", settings)
-    enable_6_handler = CommandHandler("enable_6", lambda x, y: toggle_6(x, y, True))
-    disable_6_handler = CommandHandler("disable_6", lambda x, y: toggle_6(x, y, False))
+    enable_6_handler = CommandHandler(
+        "enable_6",
+        lambda x, y: update_setting(x, y, "new_turn_on_six", True,
+                                    "new_turn_on_six")
+    )
+    disable_6_handler = CommandHandler(
+        "disable_6",
+        lambda x, y: update_setting(x, y, "new_turn_on_six", False,
+                                    "new_turn_on_six")
+    )
+    enable_delete_handler = CommandHandler(
+        "enable_delete",
+        lambda x, y: update_setting(x, y, "delete_boards", True)
+    )
+    disable_delete_handler = CommandHandler(
+        "disable_delete",
+        lambda x, y: update_setting(x, y, "delete_boards", False)
+    )
     kill_handler = CommandHandler("kill", kill)
     dice_handler = MessageHandler(filters.Filters.dice, dice)
     dispatcher.add_handler(start_handler)
@@ -212,6 +251,8 @@ def main():
     dispatcher.add_handler(dice_handler)
     dispatcher.add_handler(enable_6_handler)
     dispatcher.add_handler(disable_6_handler)
+    dispatcher.add_handler(enable_delete_handler)
+    dispatcher.add_handler(disable_delete_handler)
     updater.start_polling()
 
 if __name__ == "__main__":
