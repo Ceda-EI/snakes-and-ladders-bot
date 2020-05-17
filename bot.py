@@ -155,6 +155,9 @@ def kill(update, context):
 
 def dice(update, context):
     "Handles dice being thrown"
+    if update.message.dice.emoji != "🎲":
+        return
+
     if "game" not in context.chat_data:
         return
 
