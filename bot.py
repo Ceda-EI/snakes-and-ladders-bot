@@ -12,6 +12,16 @@ from boards import BOARDS
 from sal import Board, NotTurnError
 
 
+def is_admin(update, context):
+    if update.effective_user.id == context.chat_data.get("admin", 0):
+        return True
+    user = context.bot.get_chat_member(update.effective_chat.id,
+                                       update.effective_user.id)
+    if user.status in ["creator", "administrator"]:
+        return True
+    return False
+
+
 def start(update, context):
     "/start"
     if update.effective_chat.id > 0:
@@ -124,8 +134,8 @@ def update_setting(update, context, setting, state, attribute=None):
         state: any, Value to be set
         attribute: None | str, attribute to be updated on Board class
     """
-    if update.effective_user.id != context.chat_data.get("admin", 0):
-        message = "Only the game creator can configure the settings."
+    if not is_admin(update, context):
+        message = "Only the game creator/admins can configure the settings."
     else:
         message = "Enabled!" if state else "Disabled!"
         context.chat_data[setting] = state
@@ -142,9 +152,9 @@ def kill(update, context):
         context.bot.send_message(update.effective_chat.id,
                                  "No game in progress.")
         return
-    if update.effective_user.id != context.chat_data["admin"]:
+    if not is_admin(update, context):
         context.bot.send_message(update.effective_chat.id,
-                                 "Only game creator can kill the game.")
+                                 "Only game creator/admins can kill the game.")
         return
 
     del context.chat_data["game"]
