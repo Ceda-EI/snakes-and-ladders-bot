@@ -13,6 +13,7 @@ from sal import Board, NotTurnError
 
 
 def is_admin(update, context):
+    "Checks if the user who ran the last command is a valid admin"
     if update.effective_user.id == context.chat_data.get("admin", 0):
         return True
     user = context.bot.get_chat_member(update.effective_chat.id,
@@ -83,6 +84,7 @@ def begin(update, context):
     context.chat_data["begin"] = True
     player_name = game.turn["name"]
     message = f"Game has begun! Current turn: {player_name}"
+    context.chat_data["last_message_time"] = time.monotonic()
     context.bot.send_message(update.effective_chat.id, message)
 
 
@@ -217,6 +219,27 @@ def dice(update, context):
             context.bot.delete_message(update.effective_chat.id,
                                        context.chat_data["last_message"])
     context.chat_data["last_message"] = upd.message_id
+    context.chat_data["last_message_time"] = time.monotonic()
+
+
+def skip(update, context):
+    "Skips player's turn if it is more than MAX_TIME_PER_TURN since the last move"
+    if "game" not in context.chat_data:
+        context.bot.send_message(update.effective_chat.id,
+                                 "No game in progress.")
+        return
+    last_move = context.chat_data.get("last_message_time", time.monotonic())
+    diff = time.monotonic() - last_move
+    if diff < config.MAX_TIME_PER_TURN:
+        wait_time = int(config.MAX_TIME_PER_TURN - diff)
+        context.bot.send_message(update.effective_chat.id,
+                                 f"Please wait {wait_time} seconds.")
+        return
+    game = context.chat_data["game"]
+    game.move(game.turn["pid"], 0)
+    next_player = game.turn
+    message = f" Current turn: {next_player['name']}"
+    context.bot.send_message(update.effective_chat.id, message)
 
 
 def main():
@@ -253,6 +276,7 @@ def main():
         lambda x, y: update_setting(x, y, "delete_boards", False)
     )
     kill_handler = CommandHandler("kill", kill)
+    skip_handler = CommandHandler("skip", skip)
     dice_handler = MessageHandler(filters.Filters.dice, dice)
     dispatcher.add_handler(start_handler)
     dispatcher.add_handler(newgame_handler)
@@ -261,6 +285,7 @@ def main():
     dispatcher.add_handler(status_handler)
     dispatcher.add_handler(settings_handler)
     dispatcher.add_handler(kill_handler)
+    dispatcher.add_handler(skip_handler)
     dispatcher.add_handler(dice_handler)
     dispatcher.add_handler(enable_6_handler)
     dispatcher.add_handler(disable_6_handler)
