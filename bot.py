@@ -69,7 +69,7 @@ def join(update, context):
     game = context.chat_data["game"]
     first_name = update.effective_user.first_name
     color = game.add_player(update.effective_user.id, first_name)
-    message = f"{first_name} joined with {color}!"
+    message = f"{first_name} joined with {color}! /begin to start the game."
     context.bot.send_message(update.effective_chat.id, message)
 
 
