@@ -54,7 +54,7 @@ def newgame(update, context):
     )
     context.chat_data["admin"] = update.effective_user.id
     caption = (f"Starting new game with board {board.name}. Join via /join. "
-               "Configure via /settings.")
+               "Configure via /settings. After everyone joins, send /begin.")
     context.bot.send_photo(update.effective_chat.id, game.draw(),
                            caption=caption)
 
@@ -62,8 +62,10 @@ def newgame(update, context):
 def join(update, context):
     "/join"
     if "game" not in context.chat_data:
-        context.bot.send_message(update.effective_chat.id,
-                                 "No game in progress.")
+        context.bot.send_message(
+            update.effective_chat.id,
+            "No game in progress. Start a new game with /newgame"
+        )
         return
 
     game = context.chat_data["game"]
@@ -76,8 +78,10 @@ def join(update, context):
 def begin(update, context):
     "/begin"
     if "game" not in context.chat_data:
-        context.bot.send_message(update.effective_chat.id,
-                                 "No game in progress.")
+        context.bot.send_message(
+            update.effective_chat.id,
+            "No game in progress. Start a new game with /newgame"
+        )
         return
 
     game = context.chat_data["game"]
@@ -91,8 +95,10 @@ def begin(update, context):
 def status(update, context):
     "/status"
     if "game" not in context.chat_data:
-        context.bot.send_message(update.effective_chat.id,
-                                 "No game in progress.")
+        context.bot.send_message(
+            update.effective_chat.id,
+            "No game in progress. Start a new game with /newgame"
+        )
         return
 
     game = context.chat_data["game"]
@@ -151,8 +157,10 @@ def update_setting(update, context, setting, state, attribute=None):
 def kill(update, context):
     "/kill"
     if "game" not in context.chat_data:
-        context.bot.send_message(update.effective_chat.id,
-                                 "No game in progress.")
+        context.bot.send_message(
+            update.effective_chat.id,
+            "No game in progress. Start a new game with /newgame"
+        )
         return
     if not is_admin(update, context):
         context.bot.send_message(update.effective_chat.id,
@@ -222,11 +230,27 @@ def dice(update, context):
     context.chat_data["last_message_time"] = time.monotonic()
 
 
+def help_cmd(update, context):
+    "/help"
+    context.bot.send_message(
+        update.effective_chat.id,
+        """
+- Use /newgame to start a new game.
+- Everyone who wants to play has to send /join
+- [Optional] Change the settings using /settings
+- Send /begin to start the game
+- Send 🎲 (dice emoji) to roll the dice when it is your turn
+        """.strip()
+    )
+
+
 def skip(update, context):
     "Skips player's turn if it is more than MAX_TIME_PER_TURN since the last move"
     if "game" not in context.chat_data:
-        context.bot.send_message(update.effective_chat.id,
-                                 "No game in progress.")
+        context.bot.send_message(
+            update.effective_chat.id,
+            "No game in progress. Start a new game with /newgame"
+        )
         return
     last_move = context.chat_data.get("last_message_time", time.monotonic())
     diff = time.monotonic() - last_move
@@ -278,6 +302,7 @@ def main():
     kill_handler = CommandHandler("kill", kill)
     skip_handler = CommandHandler("skip", skip)
     dice_handler = MessageHandler(filters.Filters.dice, dice)
+    help_handler = CommandHandler("help", help_cmd)
     dispatcher.add_handler(start_handler)
     dispatcher.add_handler(newgame_handler)
     dispatcher.add_handler(join_handler)
@@ -291,6 +316,7 @@ def main():
     dispatcher.add_handler(disable_6_handler)
     dispatcher.add_handler(enable_delete_handler)
     dispatcher.add_handler(disable_delete_handler)
+    dispatcher.add_handler(help_handler)
     updater.start_polling()
 
 if __name__ == "__main__":
