@@ -197,37 +197,39 @@ def dice(update, context):
 
     steps = update.message.dice.value
     # Wait for dice to roll on client side
-    time.sleep(3.9)
-    try:
-        player = game.turn
-        final_position, direction = game.move(pid, steps, check_turn=True)
-    except NotTurnError:
-        return
-    img = game.draw()
-    if final_position == 100:
-        message = f"{player['name']} ({player['color'].name}) won! Game ended."
-        del context.chat_data["game"]
-        context.chat_data["begin"] = False
-        del context.chat_data["admin"]
-    elif direction == 1:
-        message = (f"{player['name']} grabbed a ladder and reached "
-                   f"{final_position}.")
-    elif direction == 0:
-        message = f"{player['name']} reached {final_position}."
-    elif direction == -1:
-        message = (f"{player['name']} was dragged down by a snake and reached "
-                   f"{final_position}.")
+    def after_roll(_):
+        try:
+            player = game.turn
+            final_position, direction = game.move(pid, steps, check_turn=True)
+        except NotTurnError:
+            return
+        img = game.draw()
+        message = ""
+        if final_position == 100:
+            message = f"{player['name']} ({player['color'].name}) won! Game ended."
+            del context.chat_data["game"]
+            context.chat_data["begin"] = False
+            del context.chat_data["admin"]
+        elif direction == 1:
+            message = (f"{player['name']} grabbed a ladder and reached "
+                       f"{final_position}.")
+        elif direction == 0:
+            message = f"{player['name']} reached {final_position}."
+        elif direction == -1:
+            message = (f"{player['name']} was dragged down by a snake and reached "
+                       f"{final_position}.")
 
-    if final_position != 100:
-        next_player = game.turn
-        message += f" Current turn: {next_player['name']}"
-    upd = context.bot.send_photo(update.effective_chat.id, img, caption=message)
-    if context.chat_data.get("delete_boards", True):
-        if "last_message" in context.chat_data:
-            context.bot.delete_message(update.effective_chat.id,
-                                       context.chat_data["last_message"])
-    context.chat_data["last_message"] = upd.message_id
-    context.chat_data["last_message_time"] = time.monotonic()
+        if final_position != 100:
+            next_player = game.turn
+            message += f" Current turn: {next_player['name']}"
+        upd = context.bot.send_photo(update.effective_chat.id, img, caption=message)
+        if context.chat_data.get("delete_boards", True):
+            if "last_message" in context.chat_data:
+                context.bot.delete_message(update.effective_chat.id,
+                                           context.chat_data["last_message"])
+        context.chat_data["last_message"] = upd.message_id
+        context.chat_data["last_message_time"] = time.monotonic()
+    context.job_queue.run_once(after_roll, 3.9)
 
 
 def help_cmd(update, context):
