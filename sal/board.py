@@ -15,6 +15,7 @@ COLORS = [
     Color("yellow", "#595900"),
 ]
 
+
 def draw_circle(draw, *args, **kwargs):
     "Draws a circle"
     draw.ellipse(*args, **kwargs)
@@ -29,6 +30,7 @@ SHAPES = [
     Shape("circle", draw_circle),
     Shape("square", draw_square),
 ]
+
 
 def get_coordinates(num, width=80, xoffset=0, height=80, yoffset=0):
     "Returns a tuple of form ((x_start, y_start), (x_end, y_end))"
@@ -46,7 +48,7 @@ def get_coordinates(num, width=80, xoffset=0, height=80, yoffset=0):
 
 def arrange_in_square(parts):
     "Arranges an array into the smallest NxN it can be arranged into"
-    width = ceil(len(parts)**(1/2))
+    width = ceil(len(parts) ** (1 / 2))
     array = [[None] * width for i in range(width)]
     for idx, part in enumerate(parts):
         array[idx // width][idx % width] = part
@@ -64,7 +66,8 @@ class PlayerNotFoundError(ValueError):
 class NotTurnError(ValueError):
     "Raised if it is not that player's turn"
 
-class Board():
+
+class Board:
     """
     Class representing the snakes and ladders board. Parameters:
         - board: A dict which represents all snakes and ladders as a dict
@@ -90,6 +93,7 @@ class Board():
             | 20|19|18|17|15|16|14|13|12|11|
             |  1| 2| 3| 4| 5| 5| 7| 8| 9|10|
     """
+
     def __init__(self, board, image=None, *, new_turn_on_six=False):
         self.board = dict(board)
         if image is None:
@@ -109,13 +113,15 @@ class Board():
         shape = SHAPES[(len(self.players) // len(COLORS)) % len(SHAPES)]
         if pid in (player["pid"] for player in self.players):
             raise PlayerExistsError
-        self.players.append({
-            "pid": pid,
-            "name": name,
-            "color": color,
-            "shape": shape,
-            "position": 0,
-        })
+        self.players.append(
+            {
+                "pid": pid,
+                "name": name,
+                "color": color,
+                "shape": shape,
+                "position": 0,
+            }
+        )
         return f"{color.name} {shape.name}"
 
     def move(self, pid, steps, *, check_turn=False):
@@ -140,7 +146,7 @@ class Board():
         # Check for snakes and ladders
         elif new_position in self.board:
             movement = self.board[new_position] - new_position
-            movement = movement//abs(movement)  # Get's the signum of movement
+            movement = movement // abs(movement)  # Get's the signum of movement
             new_position = self.board[new_position]
 
         player["position"] = new_position
@@ -178,7 +184,6 @@ class Board():
                     shape(draw, box, None, color, 5)
                     xoffset += width
                 yoffset += width
-
 
         fin = BytesIO()
         img.save(fin, "jpeg")

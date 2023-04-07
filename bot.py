@@ -4,8 +4,13 @@ import logging
 import random
 import time
 
-from telegram.ext import Updater, CommandHandler, MessageHandler, filters, \
-        PicklePersistence
+from telegram.ext import (
+    Updater,
+    CommandHandler,
+    MessageHandler,
+    filters,
+    PicklePersistence,
+)
 import config
 
 from boards import BOARDS
@@ -16,8 +21,9 @@ def is_admin(update, context):
     "Checks if the user who ran the last command is a valid admin"
     if update.effective_user.id == context.chat_data.get("admin", 0):
         return True
-    user = context.bot.get_chat_member(update.effective_chat.id,
-                                       update.effective_user.id)
+    user = context.bot.get_chat_member(
+        update.effective_chat.id, update.effective_user.id
+    )
     if user.status in ["creator", "administrator"]:
         return True
     return False
@@ -26,8 +32,10 @@ def is_admin(update, context):
 def start(update, context):
     "/start"
     if update.effective_chat.id > 0:
-        message = ("Single player is not supported at the moment. "
-                   "Send /newgame in a group to start the game.")
+        message = (
+            "Single player is not supported at the moment. "
+            "Send /newgame in a group to start the game."
+        )
     else:
         message = "Send /newgame to start the game."
     context.bot.send_message(update.effective_chat.id, message)
@@ -48,15 +56,14 @@ def newgame(update, context):
 
     board = random.choice(BOARDS)
     game = context.chat_data["game"] = Board(
-        board.data,
-        board.image,
-        new_turn_on_six=context.chat_data["new_turn_on_six"]
+        board.data, board.image, new_turn_on_six=context.chat_data["new_turn_on_six"]
     )
     context.chat_data["admin"] = update.effective_user.id
-    caption = (f"Starting new game with board {board.name}. Join via /join. "
-               "Configure via /settings. After everyone joins, send /begin.")
-    context.bot.send_photo(update.effective_chat.id, game.draw(),
-                           caption=caption)
+    caption = (
+        f"Starting new game with board {board.name}. Join via /join. "
+        "Configure via /settings. After everyone joins, send /begin."
+    )
+    context.bot.send_photo(update.effective_chat.id, game.draw(), caption=caption)
 
 
 def join(update, context):
@@ -64,7 +71,7 @@ def join(update, context):
     if "game" not in context.chat_data:
         context.bot.send_message(
             update.effective_chat.id,
-            "No game in progress. Start a new game with /newgame"
+            "No game in progress. Start a new game with /newgame",
         )
         return
 
@@ -80,7 +87,7 @@ def begin(update, context):
     if "game" not in context.chat_data:
         context.bot.send_message(
             update.effective_chat.id,
-            "No game in progress. Start a new game with /newgame"
+            "No game in progress. Start a new game with /newgame",
         )
         return
 
@@ -97,7 +104,7 @@ def status(update, context):
     if "game" not in context.chat_data:
         context.bot.send_message(
             update.effective_chat.id,
-            "No game in progress. Start a new game with /newgame"
+            "No game in progress. Start a new game with /newgame",
         )
         return
 
@@ -108,8 +115,10 @@ def status(update, context):
             message += "* "
         else:
             message += "   "
-        message += (f"{player['position']}: {player['name']} "
-                    f"({player['color'].name} {player['shape'].name})\n")
+        message += (
+            f"{player['position']}: {player['name']} "
+            f"({player['color'].name} {player['shape'].name})\n"
+        )
     context.bot.send_message(update.effective_chat.id, message)
 
 
@@ -159,12 +168,13 @@ def kill(update, context):
     if "game" not in context.chat_data:
         context.bot.send_message(
             update.effective_chat.id,
-            "No game in progress. Start a new game with /newgame"
+            "No game in progress. Start a new game with /newgame",
         )
         return
     if not is_admin(update, context):
-        context.bot.send_message(update.effective_chat.id,
-                                 "Only game creator/admins can kill the game.")
+        context.bot.send_message(
+            update.effective_chat.id, "Only game creator/admins can kill the game."
+        )
         return
 
     del context.chat_data["game"]
@@ -185,8 +195,7 @@ def dice(update, context):
         return
 
     if not context.chat_data.get("begin", False):
-        context.bot.send_message(update.effective_chat.id,
-                                 "Game has not started yet.")
+        context.bot.send_message(update.effective_chat.id, "Game has not started yet.")
         return
 
     game = context.chat_data["game"]
@@ -196,8 +205,9 @@ def dice(update, context):
         return
 
     steps = update.message.dice.value
-    # Wait for dice to roll on client side
+
     def after_roll(_):
+        # Wait for dice to roll on client side
         try:
             player = game.turn
             final_position, direction = game.move(pid, steps, check_turn=True)
@@ -211,13 +221,16 @@ def dice(update, context):
             context.chat_data["begin"] = False
             del context.chat_data["admin"]
         elif direction == 1:
-            message = (f"{player['name']} grabbed a ladder and reached "
-                       f"{final_position}.")
+            message = (
+                f"{player['name']} grabbed a ladder and reached " f"{final_position}."
+            )
         elif direction == 0:
             message = f"{player['name']} reached {final_position}."
         elif direction == -1:
-            message = (f"{player['name']} was dragged down by a snake and reached "
-                       f"{final_position}.")
+            message = (
+                f"{player['name']} was dragged down by a snake and reached "
+                f"{final_position}."
+            )
 
         if final_position != 100:
             next_player = game.turn
@@ -225,10 +238,12 @@ def dice(update, context):
         upd = context.bot.send_photo(update.effective_chat.id, img, caption=message)
         if context.chat_data.get("delete_boards", True):
             if "last_message" in context.chat_data:
-                context.bot.delete_message(update.effective_chat.id,
-                                           context.chat_data["last_message"])
+                context.bot.delete_message(
+                    update.effective_chat.id, context.chat_data["last_message"]
+                )
         context.chat_data["last_message"] = upd.message_id
         context.chat_data["last_message_time"] = time.monotonic()
+
     context.job_queue.run_once(after_roll, 3.9)
 
 
@@ -242,7 +257,7 @@ def help_cmd(update, context):
 - [Optional] Change the settings using /settings
 - Send /begin to start the game
 - Send 🎲 (dice emoji) to roll the dice when it is your turn
-        """.strip()
+        """.strip(),
     )
 
 
@@ -251,15 +266,16 @@ def skip(update, context):
     if "game" not in context.chat_data:
         context.bot.send_message(
             update.effective_chat.id,
-            "No game in progress. Start a new game with /newgame"
+            "No game in progress. Start a new game with /newgame",
         )
         return
     last_move = context.chat_data.get("last_message_time", time.monotonic())
     diff = time.monotonic() - last_move
     if diff < config.MAX_TIME_PER_TURN:
         wait_time = int(config.MAX_TIME_PER_TURN - diff)
-        context.bot.send_message(update.effective_chat.id,
-                                 f"Please wait {wait_time} seconds.")
+        context.bot.send_message(
+            update.effective_chat.id, f"Please wait {wait_time} seconds."
+        )
         return
     game = context.chat_data["game"]
     game.move(game.turn["pid"], 0)
@@ -285,21 +301,17 @@ def main():
     settings_handler = CommandHandler("settings", settings)
     enable_6_handler = CommandHandler(
         "enable_6",
-        lambda x, y: update_setting(x, y, "new_turn_on_six", True,
-                                    "new_turn_on_six")
+        lambda x, y: update_setting(x, y, "new_turn_on_six", True, "new_turn_on_six"),
     )
     disable_6_handler = CommandHandler(
         "disable_6",
-        lambda x, y: update_setting(x, y, "new_turn_on_six", False,
-                                    "new_turn_on_six")
+        lambda x, y: update_setting(x, y, "new_turn_on_six", False, "new_turn_on_six"),
     )
     enable_delete_handler = CommandHandler(
-        "enable_delete",
-        lambda x, y: update_setting(x, y, "delete_boards", True)
+        "enable_delete", lambda x, y: update_setting(x, y, "delete_boards", True)
     )
     disable_delete_handler = CommandHandler(
-        "disable_delete",
-        lambda x, y: update_setting(x, y, "delete_boards", False)
+        "disable_delete", lambda x, y: update_setting(x, y, "delete_boards", False)
     )
     kill_handler = CommandHandler("kill", kill)
     skip_handler = CommandHandler("skip", skip)
@@ -320,6 +332,7 @@ def main():
     dispatcher.add_handler(disable_delete_handler)
     dispatcher.add_handler(help_handler)
     updater.start_polling()
+
 
 if __name__ == "__main__":
     main()

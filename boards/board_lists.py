@@ -6,6 +6,7 @@ from collections import namedtuple
 
 BoardFile = namedtuple("BoardFile", "name data image")
 
+
 def get_data_from_csv(file):
     "Generates dict for board from csv"
     data = {}
