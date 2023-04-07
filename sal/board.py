@@ -1,7 +1,8 @@
 "Board class"
 from collections import namedtuple
-from math import ceil
 from io import BytesIO
+from math import ceil
+
 from PIL import Image, ImageDraw
 
 Color = namedtuple("Color", "name hex")

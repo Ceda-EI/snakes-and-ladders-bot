@@ -6,12 +6,18 @@ authors = ["Ceda EI <ceda_ei@webionite.com>"]
 license = "AGPL-3.0"
 
 [tool.poetry.dependencies]
-python = "^3.7"
+python = "^3.8"
 python-telegram-bot = "^13.7"
 Pillow = "^8.3.2"
 
 [tool.poetry.dev-dependencies]
 
+[tool.poetry.group.dev.dependencies]
+pre-commit = "^3.2.2"
+
 [build-system]
 requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.isort]
+profile = "black"

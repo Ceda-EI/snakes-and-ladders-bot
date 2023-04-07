@@ -1,1 +1,1 @@
-from .board_lists import BOARDS
+from .board_lists import BOARDS  # noqa: F401

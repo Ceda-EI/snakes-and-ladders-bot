@@ -5,14 +5,14 @@ import random
 import time
 
 from telegram.ext import (
-    Updater,
     CommandHandler,
     MessageHandler,
-    filters,
     PicklePersistence,
+    Updater,
+    filters,
 )
-import config
 
+import config
 from boards import BOARDS
 from sal import Board, NotTurnError
 
