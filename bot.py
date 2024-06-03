@@ -332,6 +332,7 @@ def main():
     dispatcher.add_handler(disable_delete_handler)
     dispatcher.add_handler(help_handler)
     updater.start_polling()
+    updater.idle()
 
 
 if __name__ == "__main__":
